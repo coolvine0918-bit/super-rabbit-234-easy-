@@ -1,0 +1,8 @@
+{
+  "name": "슈퍼토끼 런 \u0026 노동권 퀴즈 (Super Rabbit Quiz)(대응방안 하)",
+  "description": "슈퍼마리오 스타일의 슈퍼토끼 어드벤처 게임과 20문항 노동권 퀴즈, 구글 시트 성적 기록 시스템",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
