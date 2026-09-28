@@ -1,5 +1,5 @@
 import React from 'react';
-import { Volume2, VolumeX, Trophy, BookOpen, User, Sheet, Maximize } from 'lucide-react';
+import { Volume2, VolumeX, Trophy, User, Sheet, Maximize } from 'lucide-react';
 
 interface HeaderBarProps {
   score: number;
@@ -16,7 +16,6 @@ interface HeaderBarProps {
   laserTimeLeft?: number;
   onOpenSettings: () => void;
   onOpenLeaderboard: () => void;
-  onOpenReview: () => void;
   onOpenProfile: () => void;
   soundEnabled: boolean;
   onToggleSound: () => void;
@@ -38,7 +37,6 @@ export const HeaderBar: React.FC<HeaderBarProps> = ({
   laserTimeLeft = 0,
   onOpenSettings,
   onOpenLeaderboard,
-  onOpenReview,
   onOpenProfile,
   soundEnabled,
   onToggleSound,
@@ -173,15 +171,6 @@ export const HeaderBar: React.FC<HeaderBarProps> = ({
             title="실시간 랭킹"
           >
             <Trophy className="w-4 h-4" />
-          </button>
-
-          {/* 20 Questions Study List */}
-          <button
-            onClick={onOpenReview}
-            className="p-1.5 sm:p-2 bg-blue-100 hover:bg-blue-200 active:bg-blue-300 rounded-xl border-2 border-gray-900 shadow-[2px_2px_0px_#111827] cursor-pointer text-blue-900 touch-manipulation"
-            title="20문항 복습 & 학습노트"
-          >
-            <BookOpen className="w-4 h-4" />
           </button>
 
           {/* Google Sheet Setup */}

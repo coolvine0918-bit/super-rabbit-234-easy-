@@ -296,13 +296,18 @@ export const GoogleSheetModal: React.FC<GoogleSheetModalProps> = ({
           </div>
 
           {/* Record Format Preview */}
-          <div className="bg-amber-50 border border-amber-300 rounded-lg p-3 text-xs text-amber-900 space-y-1">
-            <strong>📊 구글 시트 집계 정책:</strong>
-            <p className="text-amber-800 font-medium">
-              * 학생들의 성취도 보장을 위해 <strong>끝까지 완주(STAGE CLEAR)에 성공한 학생들의 성적만 실시간으로 스프레드시트에 집계</strong>됩니다.
+          <div className="bg-emerald-50 border border-emerald-300 rounded-lg p-3 text-xs text-emerald-950 space-y-1">
+            <strong className="text-emerald-900 flex items-center gap-1.5 font-bold">
+              <span>📊 구글 시트 실시간 자동 기록 안내 (코드 영구 내장)</span>
+            </strong>
+            <p className="text-emerald-800 font-medium">
+              * 선생님의 Apps Script URL(<code>..._et6SNZJA/exec</code>)이 <strong>시스템 코드에 영구 고정</strong>되어 있습니다.
             </p>
-            <p className="text-gray-700 text-[11px] pt-1">
-              [기록 일시], [학번], [이름], [퀴즈 점수], [게임 점수], [총점], [맞힌 문제 수 (20문항 중)], [정답률 %], [완주 여부], [소요 시간]
+            <p className="text-emerald-800 font-medium">
+              * 학생이 게임을 마치는 즉시(완주 또는 게임 오버), <strong>학번, 이름, 점수, 정답 수가 실시간으로 스프레드시트에 새 행으로 자동 기록</strong>됩니다.
+            </p>
+            <p className="text-gray-600 text-[11px] pt-0.5">
+              기록 컬럼: [기록 일시], [학번], [이름], [퀴즈 점수], [게임 점수], [총점], [맞힌 문제 수], [총 문제 수], [정답률], [클리어 여부], [소요 시간]
             </p>
           </div>
 

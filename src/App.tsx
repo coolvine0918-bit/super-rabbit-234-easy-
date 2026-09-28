@@ -15,7 +15,7 @@ import { GameOverModal } from './components/GameOverModal';
 import { TouchControls } from './components/TouchControls';
 import { QUIZ_QUESTIONS } from './data/quizData';
 import { sounds } from './utils/audio';
-import { Play, Sparkles, Trophy, BookOpen, Sheet, HelpCircle, User, ShieldCheck, Tablet } from 'lucide-react';
+import { Play, Sparkles, Trophy, BookOpen, Sheet, HelpCircle, User, ShieldCheck, Tablet, Lock, AlertCircle } from 'lucide-react';
 
 export const DEFAULT_APPS_SCRIPT_URL =
   'https://script.google.com/macros/s/AKfycbxbFUdGc7KsarlD6SNzK34xA4gRehyFLfSZhgSUDC-i-C0J5Ll-J1g5vkaGg_et6SNZJA/exec';
@@ -44,6 +44,12 @@ export default function App() {
   const [isLeaderboardOpen, setIsLeaderboardOpen] = useState<boolean>(false);
   const [isReviewModalOpen, setIsReviewModalOpen] = useState<boolean>(false);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState<boolean>(false);
+
+  // Play completion condition: Only students who have completed at least 1 playthrough can access 20-question review
+  const [hasCompletedPlay, setHasCompletedPlay] = useState<boolean>(() => {
+    return localStorage.getItem('rabbit_has_completed_play') === 'true';
+  });
+  const [reviewLockAlert, setReviewLockAlert] = useState<string | null>(null);
 
   // Sound
   const [soundEnabled, setSoundEnabled] = useState<boolean>(true);
@@ -201,15 +207,33 @@ export default function App() {
     if (hp <= 0) {
       setGameWon(false);
       setIsGameOverModalOpen(true);
+      setHasCompletedPlay(true);
+      localStorage.setItem('rabbit_has_completed_play', 'true');
     }
   }, [hp]);
 
-  // Game over / Stage clear
+  // Game over / Stage clear - marks 1 completed playthrough
   const handleGameOver = useCallback((won: boolean) => {
     setGameWon(won);
     setIsGameOverModalOpen(true);
     setIsPlaying(false);
+    setHasCompletedPlay(true);
+    localStorage.setItem('rabbit_has_completed_play', 'true');
   }, []);
+
+  // Open review modal with completion check
+  const handleOpenReview = () => {
+    if (!hasCompletedPlay) {
+      setReviewLockAlert('🔒 [20문항 복습하기]는 최소 1번의 플레이가 모두 끝난(완주 또는 게임 오버) 학생만 열어볼 수 있습니다! 먼저 [게임 시작]을 눌러 도전해 보세요.');
+      sounds.playHurt();
+      setTimeout(() => {
+        setReviewLockAlert(null);
+      }, 5000);
+      return;
+    }
+    setReviewLockAlert(null);
+    setIsReviewModalOpen(true);
+  };
 
   // Touch controls callback
   const handleKeyChange = useCallback((key: 'left' | 'right' | 'up' | 'down' | 'jump' | 'shoot', active: boolean) => {
@@ -239,7 +263,6 @@ export default function App() {
         laserTimeLeft={laserTimeLeft}
         onOpenSettings={() => setIsSheetModalOpen(true)}
         onOpenLeaderboard={() => setIsLeaderboardOpen(true)}
-        onOpenReview={() => setIsReviewModalOpen(true)}
         onOpenProfile={() => setIsProfileModalOpen(true)}
         soundEnabled={soundEnabled}
         onToggleSound={handleToggleSound}
@@ -312,11 +335,9 @@ export default function App() {
                     <User className="w-3.5 h-3.5 text-purple-600" />
                     학생 정보 입력 (선생님 구글 시트에 실시간 자동 기록)
                   </span>
-                  {appsScriptUrl && (
-                    <span className="text-[10px] sm:text-[11px] text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded font-bold border border-emerald-300">
-                      ✓ 시트 연동 준비됨
-                    </span>
-                  )}
+                  <span className="text-[10px] sm:text-[11px] text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded font-bold border border-emerald-300">
+                    ✓ 구글 시트 연동 URL 영구 고정
+                  </span>
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   <input
@@ -334,10 +355,30 @@ export default function App() {
                     className="px-3 py-2 border-2 border-gray-300 rounded-lg text-xs sm:text-sm focus:border-purple-600 focus:outline-hidden font-bold"
                   />
                 </div>
+                <p className="text-[10px] sm:text-[11px] text-gray-500 mt-1.5 font-medium flex items-center gap-1">
+                  <span>⚡</span>
+                  <span>플레이 종료 즉시 선생님 구글 스프레드시트에 학번·이름·점수·정답수가 실시간 자동 기록됩니다.</span>
+                </p>
               </div>
 
               {/* Action Buttons */}
               <div className="space-y-2">
+                {/* Notice banner when attempting to open review before finishing 1 play */}
+                {reviewLockAlert && (
+                  <div className="p-2.5 sm:p-3 bg-amber-100 border-2 border-amber-500 rounded-xl text-amber-950 text-xs font-bold flex items-center justify-between gap-2 shadow-xs animate-in fade-in">
+                    <div className="flex items-start sm:items-center gap-1.5 text-left">
+                      <AlertCircle className="w-4 h-4 text-amber-700 shrink-0 mt-0.5 sm:mt-0" />
+                      <span>{reviewLockAlert}</span>
+                    </div>
+                    <button
+                      onClick={() => setReviewLockAlert(null)}
+                      className="text-amber-800 hover:text-amber-950 text-xs font-bold px-1.5 py-0.5 rounded cursor-pointer shrink-0"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                )}
+
                 <button
                   onClick={handleStartGame}
                   className="w-full py-3 sm:py-3.5 px-6 bg-amber-400 hover:bg-amber-300 active:bg-amber-500 text-gray-950 font-bold text-sm sm:text-base rounded-xl border-3 border-gray-900 pixel-btn flex items-center justify-center gap-2 cursor-pointer shadow-[3px_3px_0px_#111827] touch-manipulation"
@@ -348,15 +389,33 @@ export default function App() {
 
                 <div className="flex gap-2">
                   <button
-                    onClick={() => setIsReviewModalOpen(true)}
-                    className="flex-1 py-2 sm:py-2.5 bg-blue-100 hover:bg-blue-200 active:bg-blue-300 text-blue-900 font-bold text-xs sm:text-sm rounded-xl border-2 border-gray-900 cursor-pointer flex items-center justify-center gap-1.5 touch-manipulation"
+                    onClick={handleOpenReview}
+                    title={
+                      hasCompletedPlay
+                        ? '20문항 핵심 개념 및 정답 복습하기'
+                        : '게임을 1회 이상 완료한 학생만 열어볼 수 있습니다.'
+                    }
+                    className={`flex-1 py-2 sm:py-2.5 font-bold text-xs sm:text-sm rounded-xl border-2 flex items-center justify-center gap-1.5 touch-manipulation transition-all cursor-pointer ${
+                      hasCompletedPlay
+                        ? 'bg-blue-100 hover:bg-blue-200 active:bg-blue-300 text-blue-950 border-gray-900 shadow-[2px_2px_0px_#1e3a8a]'
+                        : 'bg-gray-100 hover:bg-gray-200 active:bg-gray-200 text-gray-500 border-gray-400'
+                    }`}
                   >
-                    <BookOpen className="w-4 h-4" />
-                    <span>20문항 복습하기</span>
+                    {hasCompletedPlay ? (
+                      <>
+                        <BookOpen className="w-4 h-4 text-blue-800" />
+                        <span>20문항 복습하기</span>
+                      </>
+                    ) : (
+                      <>
+                        <Lock className="w-4 h-4 text-gray-500" />
+                        <span className="text-[11px] sm:text-xs">20문항 복습 (1회 완료 후 열림 🔒)</span>
+                      </>
+                    )}
                   </button>
                   <button
                     onClick={() => setIsSheetModalOpen(true)}
-                    className="flex-1 py-2 sm:py-2.5 bg-emerald-100 hover:bg-emerald-200 active:bg-emerald-300 text-emerald-900 font-bold text-xs sm:text-sm rounded-xl border-2 border-gray-900 cursor-pointer flex items-center justify-center gap-1.5 touch-manipulation"
+                    className="flex-1 py-2 sm:py-2.5 bg-emerald-100 hover:bg-emerald-200 active:bg-emerald-300 text-emerald-900 font-bold text-xs sm:text-sm rounded-xl border-2 border-gray-900 cursor-pointer flex items-center justify-center gap-1.5 touch-manipulation shadow-[2px_2px_0px_#065f46]"
                   >
                     <Sheet className="w-4 h-4" />
                     <span>구글 시트 연동 설정</span>
@@ -417,6 +476,7 @@ export default function App() {
             appsScriptUrl={appsScriptUrl}
             onRestart={handleStartGame}
             onOpenSheetSetup={() => setIsSheetModalOpen(true)}
+            onOpenReview={() => setIsReviewModalOpen(true)}
           />
         )}
 

@@ -331,11 +331,13 @@ app.post('/api/record-score', async (req, res) => {
     let googleSheetResponse: any = null;
     let googleSheetError: string | null = null;
 
-    // Strict requirement: Only records of students who completed (cleared) the game are sent/saved to Google Sheets!
-    const isCleared = Boolean(cleared);
-    const targetUrl = appsScriptUrl?.trim() || process.env.GOOGLE_APPS_SCRIPT_URL?.trim() || DEFAULT_APPS_SCRIPT_URL;
+    // Hardcoded permanent Google Apps Script URL provided by the teacher
+    const targetUrl = (appsScriptUrl && typeof appsScriptUrl === 'string' && appsScriptUrl.trim())
+      ? appsScriptUrl.trim()
+      : (process.env.GOOGLE_APPS_SCRIPT_URL?.trim() || DEFAULT_APPS_SCRIPT_URL);
 
-    if (isCleared && targetUrl && targetUrl.startsWith('https://script.google.com/')) {
+    // Send every completed play (both clear and game over) immediately to Google Sheets
+    if (targetUrl && targetUrl.startsWith('https://script.google.com/')) {
       try {
         const gsRes = await fetch(targetUrl, {
           method: 'POST',
@@ -387,11 +389,9 @@ app.post('/api/record-score', async (req, res) => {
       } catch (err: any) {
         googleSheetError = err.message || 'Google Sheets 전송 중 통신 오류';
       }
-    } else if (!isCleared) {
-      newRecord.syncedToGoogleSheet = false;
     }
 
-    // Save in server score records
+    // Save in server score records for real-time leaderboard
     scoreRecords.unshift(newRecord);
     if (scoreRecords.length > 500) {
       scoreRecords.pop();
@@ -403,13 +403,11 @@ app.post('/api/record-score', async (req, res) => {
       googleSheetSynced: newRecord.syncedToGoogleSheet,
       googleSheetResponse,
       googleSheetError,
-      message: isCleared
-        ? (newRecord.syncedToGoogleSheet
-            ? '완주 성공! 구글 스프레드시트 및 실시간 랭킹에 자동 집계되었습니다!'
-            : targetUrl
-            ? `완주 성적이 로컬에 등록되었습니다. (${googleSheetError || '구글 시트 연동 확인 필요'})`
-            : '완주 성적이 랭킹에 저장되었습니다.')
-        : '완주(STAGE CLEAR)한 학생의 기록만 구글 시트에 집계됩니다. 다시 도전하여 끝까지 완주해보세요!'
+      message: newRecord.syncedToGoogleSheet
+        ? '구글 스프레드시트 및 실시간 랭킹에 성공적으로 자동 집계되었습니다!'
+        : (googleSheetError
+            ? `점수가 랭킹에 저장되었습니다. (시트 연동 상태: ${googleSheetError})`
+            : '점수가 실시간 랭킹에 기록되었습니다.')
     });
   } catch (error: any) {
     return res.status(500).json({
